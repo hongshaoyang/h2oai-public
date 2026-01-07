@@ -21,3 +21,12 @@ curl -X POST http://h2oai-h2ogpt-llama-3-1-70b:5000/v1/chat/completions \
     "temperature": 0.7
   }'
 ```
+- h2ogpt.config.h2ogpt.agent.enabled - remove, take the default (true)
+    - remove h2ogpt.config.agent - remove
+    - 
+- agent waits for inferencing service to be ready
+    - gpt-agent deployment init container
+    - cm gpt-agent-config-envs, H2OGPT_MODEL_LOCK
+    - 
+- agentic tools
+  - defaultAgentTools: '["shell", "python", "ask_question_about_documents.py", "mermaid_renderer.py", "convert_document_to_text.py", "rag_text"]'
