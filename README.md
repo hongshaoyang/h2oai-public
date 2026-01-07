@@ -30,3 +30,8 @@ curl -X POST http://h2oai-h2ogpt-llama-3-1-70b:5000/v1/chat/completions \
     - 
 - agentic tools
   - defaultAgentTools: '["shell", "python", "ask_question_about_documents.py", "mermaid_renderer.py", "convert_document_to_text.py", "rag_text"]'
+
+- VLLM tuning
+  - --distributed-executor-backend - try using mp if ray doesn't work - https://docs.vllm.ai/en/stable/serving/parallelism_scaling/#single-node-deployment
+  - max-model-len - may need to set if needed
+  - 
