@@ -35,3 +35,54 @@ curl -X POST http://h2oai-h2ogpt-llama-3-1-70b:5000/v1/chat/completions \
   - --distributed-executor-backend - try using mp if ray doesn't work - https://docs.vllm.ai/en/stable/serving/parallelism_scaling/#single-node-deployment
   - max-model-len - may need to set if needed
   - 
+
+### 2025-01-28 cj for deployment restart
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployment-restarter
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployment-restarter-role
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployment-restarter-binding
+subjects:
+  - kind: ServiceAccount
+    name: deployment-restarter
+roleRef:
+  kind: Role
+  name: deployment-restarter-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-deployment-restart
+spec:
+  schedule: "0 3 * * *" # Runs every day at 3:00 AM
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: deployment-restarter
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - kubectl rollout restart deployment/YOUR_DEPLOYMENT_NAME
+          restartPolicy: OnFailure
+```
