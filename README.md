@@ -86,3 +86,77 @@ spec:
             - kubectl rollout restart deployment/YOUR_DEPLOYMENT_NAME
           restartPolicy: OnFailure
 ```
+script for psql login
+```sh
+#!/usr/bin/env bash
+set -e
+
+ROLE="$1"
+if [[ -z "$ROLE" ]]; then
+  echo "Usage: $0 {superuser|gpte}"
+  exit 1
+fi
+
+# Credentials
+export superuser='u4eHNiHrGD8oHNMfHWtCzA9ts2l1Fs5u9bMy6mhPVnu61QAq90MGr0Orl77QsZhh'
+export h2ogpte='pGwlBimEMnOiiBpWkCDugnxJgoM4zFKGOOlbxDJ2He3yBU9W6Y6lqO2IdShg5pJY'
+export readonly='readonly'
+export PGSSLMODE=require
+export PGPASSWORD="${!ROLE}"
+
+# Start port-forward in background
+kubectl port-forward service/haic-db-test-pooler 5432:5432 -n db >/tmp/pg-portforward.log 2>&1 &
+PF_PID=$!
+trap "kill $PF_PID" EXIT
+sleep 2
+
+psql -U "$ROLE" -h localhost -p 5432 -d appstore
+```
+
+readonly user
+```sql
+/**
+\l list dbs
+\dn - list schemas
+\d - list tables/views etc
+\dt - list tables
+
+
+\du - view users
+*/
+
+-- db level
+SELECT
+  datname,
+  has_database_privilege('readonly', datname, 'CONNECT') AS connect,
+  has_database_privilege('readonly', datname, 'CREATE')  AS create,
+  has_database_privilege('readonly', datname, 'TEMP')    AS temp
+FROM pg_database
+ORDER BY datname;
+
+-- schema level
+SELECT
+  n.nspname AS schema,
+  has_schema_privilege('readonly', n.nspname, 'USAGE')  AS usage,
+  has_schema_privilege('readonly', n.nspname, 'CREATE') AS create
+FROM pg_namespace n
+ORDER BY n.nspname;
+
+
+CREATE USER readonly WITH PASSWORD 'readonly' -- note, not role
+
+-- db level, run for each db
+\c your_db
+-- GRANT CONNECT ON DATABASE h2ogpte TO readonly; -- not needed because users have default connect privilege
+
+-- schema level, run for each schema
+GRANT USAGE ON SCHEMA h2ogpte TO readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA h2ogpte TO readonly;
+
+
+
+-- verification
+select * from h2ogpte.default_prompt_templates limit 1; -- prefix for schema
+select * from telemetry limit 1; 
+select * from app_name limit 1; -- appstore
+```
