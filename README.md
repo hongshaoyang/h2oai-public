@@ -86,6 +86,9 @@ spec:
             - kubectl rollout restart deployment/YOUR_DEPLOYMENT_NAME
           restartPolicy: OnFailure
 ```
+
+
+
 script for psql login
 ```sh
 #!/usr/bin/env bash
@@ -160,3 +163,39 @@ select * from h2ogpte.default_prompt_templates limit 1; -- prefix for schema
 select * from telemetry limit 1; 
 select * from app_name limit 1; -- appstore
 ```
+
+models
+- [x] test cost constraints
+- [x] fix useModelsHub:
+  - add global.modelHub.component = modelshub
+  - remove references to HF_ENDPOINT in gpt-server, llama 3.1, deepseek R1
+  - (optional) set `<VLLM>.podSpec.useModelHub: true` 
+
+
+telemetry <> gpte integration
+```yaml
+h2ogpte:
+  configmap:
+    mux-extra-cm:
+      data:
+        # enable
+        H2OGPTE_MUX_TELEMETRY_ENABLED: "true"
+        H2OGPTE_MUX_TELEMETRY_ADDRESS: "tz-testing-prod-telemetry-service.telemetry.svc.cluster.local:80"
+
+  deployment:
+    mux:
+      replicas: 1
+      podSpec:
+        containers:
+          mux:
+            envFrom:
+              - configMapRef:
+                  name: mux-config
+              - configMapRef:
+                  name: mux-extra-cm
+```
+
+
++ the h2ogpte mux service acc need to be allowed in telemetry-server-conf config map
+see haic-installer-bundle/terraform/modules/applications/telemetry/resources/telemetry-values.yaml
+- check config.authorizedServiceAccounts
