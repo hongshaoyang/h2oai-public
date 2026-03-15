@@ -199,3 +199,55 @@ h2ogpte:
 + the h2ogpte mux service acc need to be allowed in telemetry-server-conf config map
 see haic-installer-bundle/terraform/modules/applications/telemetry/resources/telemetry-values.yaml
 - check config.authorizedServiceAccounts
+
+### 2025-03-15 vllm addition
+
+```yml
+h2ogpt:
+  config:
+    vllm:
+      shaoqwen25vl32b:
+        enabled: false
+        resources:
+          limits:
+            memory: 12Gi
+            gpu: 1
+          requests:
+            memory: 4Gi
+            cpu: 2000m
+            gpu: 1
+        storage:
+          size: 512Gi
+          useEphemeral: true
+        pdb:
+          enabled: false
+        # -- NCCL_IGNORE_DISABLED_P2P
+        ncclIgnoreDisabledP2P: "1"
+        # -- model to run
+        model: "Qwen/Qwen2.5-VL-3B-Instruct"
+        # -- update with the LLM model serving
+        containerArgs:
+          - "--tensor-parallel-size" # 1 for 1 gpu
+          - "1"
+          - "--gpu-memory-utilization"
+          - "0.92"
+          - "--dtype"
+          - "half" # explicit for mha-testing-v2 setup
+          - "--max-model-len"
+          - 4K
+          - "--seed"
+          - "1234"
+          - "--trust-remote-code"
+        env:
+          VLLM_NO_USAGE_STATS: "1"
+          DO_NOT_TRACK: "1"
+        extraParams:
+          max_output_seq_len: 4096
+          max_seq_len: 4096
+        startupProbe:
+          enabled: false
+        livenessProbe:
+          enabled: false
+        readinessProbe:
+          enabled: false
+```
