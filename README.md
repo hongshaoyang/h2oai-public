@@ -251,3 +251,5 @@ h2ogpt:
         readinessProbe:
           enabled: false
 ```
+
+![](qwen2.5.png)
