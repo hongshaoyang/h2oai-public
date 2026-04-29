@@ -253,3 +253,9 @@ h2ogpt:
 ```
 
 ![](qwen2.5.png)
+
+### upgrade prep
+```
+$ md5 Downloads/haic-installer-bundle-24.07.0.zip
+MD5 (Downloads/haic-installer-bundle-24.07.0.zip) = 80892c642e05e673bd0fb1d434b98a96
+```
