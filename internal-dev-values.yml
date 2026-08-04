@@ -1,0 +1,1671 @@
+global:
+  # rootChartName must be the same as the release name
+  rootChartName: h2oai
+  cloudProtocol: https
+  cloudHost: 10.18.64.250.nip.io
+  adminPassword: adminadminadmin
+  imageRegistry: 008947002919.dkr.ecr.us-east-1.amazonaws.com
+  oidc:
+    keycloakRealm: hac
+
+  ingressEnabled: true
+  ingressClassName: nginx
+  createNamespace: false
+
+  securityContext:
+    pod:
+      preferGlobal: true
+    container:
+      runAsNonRoot: true
+      allowPrivilegeEscalation: false
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+  # Set chart to use the deprecated modelshub
+  # modelHub:
+  #   component: modelshub
+
+  components:
+  # Phase 1: GenAI Stack + Phase 4: Migrate H2OGPT to ModelHub
+    redis:
+      enabled: true
+      namespace: h2ogpte
+    # Phase 4: Migration to ModelHub
+    modelshub:
+      enabled: false
+      namespace: modelshub
+    h2ogpt:
+      enabled: true
+      namespace: h2ogpt
+    h2ogpte:
+      enabled: true
+      namespace: h2ogpte
+    evalstudio:
+      enabled: true
+      namespace: evalstudio
+
+  # Phase 2: Keycloak Migration
+    keycloak:
+      enabled: true
+      namespace: keycloak-v2
+      subdomains:
+        public: auth-v2
+
+  # Phase 3: Enabling of telemetry, authz, discovery services 
+    appstore:
+      enabled: true
+      namespace: appstore
+      subdomains:
+        public: appstore-v2
+    clouddiscovery:
+      enabled: true
+      namespace: discovery-v2     
+    authz:
+      enabled: true
+      namespace: authz-v2
+      subdomains:
+        public: authz-gateway-v2
+    telemetry:
+      enabled: true
+      namespace: telemetry-v2
+      subdomains:
+        public: telemetry-v2
+
+    # Phase 4: Migration to ModelHub
+    drive:
+      enabled: true
+      namespace: drive-v2
+      subdomains:
+        sts: sts-v2
+        user-drive: user-drive-v2
+        workspace-drive: workspace-drive-v2
+    modelhub:
+      enabled: true
+      namespace: modelhub-v2
+      subdomains:
+        public: modelhub-v2
+
+    # Phase 5: AIEM
+    aiem:
+      enabled: true
+      namespace: aiem-v2
+      subdomains:
+        public: enginemanager-v2
+    gatewayapi:
+      enabled: true
+      namespace: gateway-v2
+
+    #Phase 6 MLOps
+    rabbitmq:
+      enabled: true
+      namespace: rabbitmq-v2
+    mlops:
+      enabled: true
+      namespace: mlops-v2
+      subdomains:
+        web: mlops-v2
+        apiGateway: mlops-api-v2
+        deploymentEnvironment: model-v2
+
+    # Phase 7 - DocumentAI
+    kafka:
+      enabled: true
+      namespace: kafka-v2
+    argoworkflows:
+      enabled: true
+      namespace: argoworkflows-v2
+    mlapi:
+      enabled: true
+      namespace: mlapi-v2
+      subdomains:
+        public: ml-api-v2
+    documentai:
+      enabled: true
+      namespace: document-ai-v2
+      subdomains:
+        apiServer: document-ai-backend-v2
+        uiViewer: document-ai-viewer-v2
+        uiPublisher: document-ai-v2
+
+
+# Phase 8 WaveApps
+    applabelgeniegpu:
+      enabled: true
+      namespace: appstore
+    applabelgeniecpu:
+      enabled: true
+      namespace: appstore
+    apphydrogentorch:
+      enabled: true
+      namespace: appstore
+    appdriveui:
+      enabled: true
+      namespace: appstore
+    # Internal Dev install manually due to PVC size creation limit (default need 2Ti)
+    appllmstudio:
+      enabled: false
+      namespace: appstore
+
+  # Disabled not installing in UH 1.2.0
+    nginx:
+      enabled: false
+      namespace: nginx
+    ambassador:
+      enabled: false
+      namespace: mlops
+    aiemambassador:
+      enabled: false
+      namespace: aiem
+    postgresql:
+      enabled: false
+    minio:
+      enabled: false
+      namespace: minio
+    influxdb:
+      enabled: false
+      namespace: default
+    steam:
+      enabled: false
+      namespace: steam
+    llmstudio:
+      enabled: false
+      namespace: appstore
+    llmdatastudio:
+      enabled: false
+      namespace: appstore
+    keda:
+      enabled: false
+
+  caCertificates:
+    value: |
+      -----BEGIN CERTIFICATE-----
+      MIIExTCCAy2gAwIBAgIQaEahjElbaDfZSSEOexnwWTANBgkqhkiG9w0BAQsFADB7
+      MR4wHAYDVQQKExVta2NlcnQgZGV2ZWxvcG1lbnQgQ0ExKDAmBgNVBAsMH3VidW50
+      dUBpcC0xMC0xOC00Ny0xMTQgKFVidW50dSkxLzAtBgNVBAMMJm1rY2VydCB1YnVu
+      dHVAaXAtMTAtMTgtNDctMTE0IChVYnVudHUpMB4XDTI2MDYzMDA4NDQwN1oXDTM2
+      MDYzMDA4NDQwN1owezEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMSgw
+      JgYDVQQLDB91YnVudHVAaXAtMTAtMTgtNDctMTE0IChVYnVudHUpMS8wLQYDVQQD
+      DCZta2NlcnQgdWJ1bnR1QGlwLTEwLTE4LTQ3LTExNCAoVWJ1bnR1KTCCAaIwDQYJ
+      KoZIhvcNAQEBBQADggGPADCCAYoCggGBAKGos7pbaaKstfJrXDsZci0Y8zDKyVSH
+      YdRgbLC3iQl9a99sHli489IplBWR7QZ12MTzGcoWQ7Mi5zWJoOqwy5bX86Ra7+g9
+      7IL2fSfid7XCEfTdL32H6scdv/7QT6oqTq8Q9ePgAR0nQRw91ifhsVQJIi80TtBB
+      jKvaKpZUhIGQDJ9zcKd/EVEaBog2kNNacQhWBlf1vh3LyIMPf1fKTOtqghLQYvHQ
+      7mTwX4sGpjb3b/tx09O0gF8woIB//V+KDJ7JZMJdxGzyeq3LNjQr6dBgnfuqnk/n
+      GUyx6xtN4ow1IWWU6e8SjofdoQxDOXqZTxTdnuDwp4VI35glg0Oh3r9JbDs6D5J0
+      zUr3wAz/j1IKZf73QUlFpL3UBGIew6BvV1Zo2ThSIA3ZMt4AiccBedzo81/s2V73
+      5hl4iAOkr0dvsNMqPFTfKKn8EhRR6QvQ9TBbz+jWxVWOupOiQRUelrvVBkScZH/a
+      JZ8/NKMGeuDl997GmmQPpiJV7bSHvT7VrwIDAQABo0UwQzAOBgNVHQ8BAf8EBAMC
+      AgQwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUbH08jHo/gffAULQ6qFEP
+      5aoKig4wDQYJKoZIhvcNAQELBQADggGBABGn1JU7IrZSY/hbWG1QX+n4ycNvb+n1
+      +jVEb7Vr3HpSPeRjySjx0L1qY3UgMhiO2fGkFV+SeBKoSBsEHQuXbBZC74b7qsLe
+      tIL5njvLDcum31n4O/HERUlMmh5aKk4d7OVohw60BV47GuiKwRlckzwwHt2+pKF2
+      Y96Bes2lpAG/GpxBE+0uSad5MBf/K9j5GQghq/Ue/XFr2vTd6VNodUeCOdq5xDXP
+      Ko5c/zdlS8RCJSKK7qXPnpVKu2jSVPoFA5pNZj1nGMfWT6KrErgyC0+8vAyrmF8g
+      uwKUg9ipT76WDgmzCcdekHANPtRH1ggogpDhODsqEbH2w4c0JO6IYG7hqrQOnTDd
+      syuO04coc2KlymxEDKc219jz9jMiMzNrwBjE7Reu4gVLlX3kflBtmq9EPgYbNnrA
+      s5slMMJImhT0tSsILL9IWcv71i5sj3n5lpwlWyqONlfvLyNzTdvibn4RqpPXazxz
+      XgZ3vhtMiiGZ+hOu3iMj6Eu8sXrdHK5lpg==
+      -----END CERTIFICATE-----
+  tlsSecretName: tls-secret
+  secret:
+    tls-secret:
+      type: "kubernetes.io/tls"
+      data:
+        crt: |
+          -----BEGIN CERTIFICATE-----
+          MIIEWDCCAsCgAwIBAgIRAOOASi1nnx1/90KMbrLR4awwDQYJKoZIhvcNAQELBQAw
+          ezEeMBwGA1UEChMVbWtjZXJ0IGRldmVsb3BtZW50IENBMSgwJgYDVQQLDB91YnVu
+          dHVAaXAtMTAtMTgtNDctMTE0IChVYnVudHUpMS8wLQYDVQQDDCZta2NlcnQgdWJ1
+          bnR1QGlwLTEwLTE4LTQ3LTExNCAoVWJ1bnR1KTAeFw0yNjA3MDEwOTEyNDZaFw0y
+          ODEwMDEwOTEyNDZaMFMxJzAlBgNVBAoTHm1rY2VydCBkZXZlbG9wbWVudCBjZXJ0
+          aWZpY2F0ZTEoMCYGA1UECwwfdWJ1bnR1QGlwLTEwLTE4LTQ3LTExNCAoVWJ1bnR1
+          KTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANK3j+j86OTnoK1H3ay0
+          2oWnHbaPJ5dXtCmwNIR7Ngxb7HYkJEtJfxQlL5VPIAHi+hweGivgmTlImQbXyPYY
+          NMnkVWdjMkFyCe5d2dApGJyJHGSLW2ZPeRrVQlRmbb0mSWzagQTJZCM/CZ3X2J0F
+          I3RYoEQRX+7YPDh1fzJ6d1UNrUrW7XWodCF6HTclgYTMHPmm4ArC6ol27LtiL4sr
+          S92xuK4hqQ1Z6bnZ/aaZzKZxpaYr9Sxfynj16Wf3dFkdEno71/Gp9VPMFoTVrxX4
+          Fx3ofr4hkW7Crb5QMMHwT+VDfmqwwTUGe/xLAfnCWr9+ze8VClS/d5A7qktriLC1
+          ccUCAwEAAaN/MH0wDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMB
+          MB8GA1UdIwQYMBaAFGx9PIx6P4H3wFC0OqhRD+WqCooOMDUGA1UdEQQuMCyCFSou
+          MTAuMTguNjQuMjUwLm5pcC5pb4ITMTAuMTguNjQuMjUwLm5pcC5pbzANBgkqhkiG
+          9w0BAQsFAAOCAYEAfhW3imwlY625X71uC2K6Bo6/wzcKJLAXj7FDJqrPGlqVJczl
+          /U5Ym+ycxgbQuM2PCxAO/BC88cCXhDeXxoo3Us+xctuhTZK33BijYbgore7dBTGb
+          95jQmXKfK92LP+B7CYyD1U4Ibg99f+hwB8eNEElIYuZfUOwQvnusQr/68O7avPAd
+          K10ExpFGTWpMNFrykr7ImcYqCxnfIn7m2BSC/u2M1u0kYDh00E3F+47fEzcU11vx
+          QDwBFR+S2eP3wqFBMJuYc7kHEj9XyNA5j2a3NI/cm2zaD225kA99uTkJGIK8Vj9O
+          IMtj4LSEjPZv1NgDgz0deE3BqoxT1/rHZd/EGFTEGp8GHWv1TjKT/1mh+j10cW25
+          FyRUr1FnDlYu5JZL9uQGI+YPWEuYB7bLRQn6EHdVHQf3GRGKwgc/wUbxe7pxLDYD
+          S1njFuxUNCyrFT/iTBGW2ljxLZA/qDFAGPrgGl+RRs0cJXu4SCjgsHdRFXKlx2TB
+          Egth8U1jbb+dKtuI
+          -----END CERTIFICATE-----
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDSt4/o/Ojk56Ct
+          R92stNqFpx22jyeXV7QpsDSEezYMW+x2JCRLSX8UJS+VTyAB4vocHhor4Jk5SJkG
+          18j2GDTJ5FVnYzJBcgnuXdnQKRiciRxki1tmT3ka1UJUZm29Jkls2oEEyWQjPwmd
+          19idBSN0WKBEEV/u2Dw4dX8yendVDa1K1u11qHQheh03JYGEzBz5puAKwuqJduy7
+          Yi+LK0vdsbiuIakNWem52f2mmcymcaWmK/UsX8p49eln93RZHRJ6O9fxqfVTzBaE
+          1a8V+Bcd6H6+IZFuwq2+UDDB8E/lQ35qsME1Bnv8SwH5wlq/fs3vFQpUv3eQO6pL
+          a4iwtXHFAgMBAAECggEAX9840O7RH+TrTCvYhg27JvhEIp27i7ZRuG39VxGgI7tn
+          ONF02fRUp1vL7IkVrQYSedyQV8pWrKOFTIG9Y4rb6cfDu8h8Qx6ZuiRlR7qLAh24
+          F174dPJPzY+eIDyCTX8wBSDddsoSj57Mx04/tiFyYis4r/+fwFIOBDohZ1wlE0LU
+          YLvxsNL6q1PAqU2jVSKl2LC2ppQnW/KuMRPpf9CHXhukq2Pyto8A9sGZoUYHUm3+
+          1GO8BpeIaYTMRlkvaotrVr/1pi431wwpZ0Jf4Y1vd9/KXRV7/nrqJUwHsSYrMh+O
+          HwTygCDp1HhpHAzCh6wqKJ2pcBoeM2S8f/KECdofgQKBgQDjEW4Ei6J8w4mduMhP
+          u6Wvzo9P1LLKyWO/TVYa+0Lw99zYvOYpVPGPZyaUILEfJG7TC8m2XC/zvIOYB4XE
+          Z0NvVI5peuW4xbXC23Xk9eRQe0ymZ4fQwVI4x3FuM7a+4b/UHavns7ZGsbPwiqBi
+          0Lzbx1km6plk2r9lNrkWm6HG8QKBgQDtkMoX1eBMPWFCTgrw0mNf3dpSE3TzozXc
+          gXvSu0OFpc9bM++RjnYyVZBCm0FTX8uf8h809FFu+xwWdCktRuhEkZopksX4ep2P
+          eP0ZVcJX0g7jO/hNnbP3nYvDzIWYkP7dJ+u3NKrwcQz73RQkF6Kpf6rWVR5GYVK3
+          o4hTYLIgFQKBgCwlyWQs2eyz/9+ge6G09CPYX1jAG/r9aN1a5fDdBUjgiBnDsGQ8
+          1bJx9bg7GvTZGosB8bf4+IHFFzjJzaJACYZtxDqR4HQqTIqULLnVbQyQzHhWDLvz
+          uk67yDwK5e766VcOZcvozvmzty5/ZWuQ9gctHRJJ7oUDWs8M8rOIks2hAoGBALLT
+          3BznJYmeZrkXsEqpxJ5kjTRdaxr/j8rmOYRe7KwNLbLUvJDQMY8gM5C/+AO/x7Ml
+          +nHNPAOTyQfp9xkbGDqNdAO5dYbfHf3jMHrCwKGFASnyea5LeS57DLueGC7JbuCh
+          bWGips6J+yEYwVGN7Sc0cDAZMMn/9tk/o55H2q4lAoGAPAoELQOFu8Reqk/+37Pn
+          6tjzjnBcApXl4rDBvXZo5dYlGJTTMz9rxejDrS+hzZ3VBVYTYwDgNJi+Qgym0bv3
+          qsj7CpUr5jidzPBk6jrz7Z3EUTUOICTCiDZAOi3MtN/8arN3MTV6Bc5KKddv9bym
+          m+/8zOkuTHPv9up0KCLc3K4=
+          -----END PRIVATE KEY-----
+
+# Phase 1
+redis:
+  namespaceOverride: h2ogpte
+  master:
+    persistence:
+      size: 200Gi
+
+h2ogpt:
+  config:
+    commonConfig:
+      verbose: "true"
+    llm:
+      resources:
+        limits:
+          memory: 16Gi
+        requests:
+          memory: 4Gi
+          cpu: 100m
+      overrideConfig:
+        langchain_mode: "UserData"
+      env:
+        NVIDIA_VISIBLE_DEVICES: none
+        DISABLE_OPENAI_AUTO_MODEL_NAME: 1
+        H2OGPT_VALIDATE_CLIENTS: "false" # MHA specific issue tracker n
+
+      # OLD-STYLE vLLM (0.8.5 / h2oai-h2ogpt-internalvllm) — must be declared here by hand.
+      # NEW-STYLE models under config.vllm are appended to model_lock automatically
+      # by the chart (see charts/h2oai-h2ogpt/templates/_helpers.tpl "h2ogpt.modelLock").
+      externalLLM:
+        modelLock:
+        # added on 2026-06-04 by PCSS to conduct FAT on Staging; based on umbrella-1.2.0-values_masked.yaml from Prod
+        - inference_server     : vllm_chat:h2oai-h2ogpt-qwen3-coder:5000:/v1 #kubernets service name
+          base_model           : Qwen/Qwen3-0.6B
+          display_name         : Qwen/Qwen3-0.6B
+          tokenizer_base_model : tiktoken
+          max_seq_len          : 32768
+        #  max_output_seq_len   : 4096 # disable, modifiable in UI
+          images_num_max       : -2
+    function:
+      config:
+        enable_stt: false
+        stt_model: ""
+        enable_transcriptions: false
+      resources:
+        requests:
+          gpu: 0
+          memory: 8Gi
+        limits:
+          gpu: 0
+          memory: 32Gi
+
+    agentShared:
+      env:
+        DISABLE_OPENAI_AUTO_MODEL_NAME: 1
+        H2OGPT_VALIDATE_CLIENTS: "false"
+    agentIsolated:
+      env:
+        DISABLE_OPENAI_AUTO_MODEL_NAME: 1
+        H2OGPT_VALIDATE_CLIENTS: "false"
+
+    # ---------------------------------------------------------------------
+    # NEW-STYLE vLLM declaration (0.19 / thirdparty-chainguard-vllmopenai).
+    # The chart drives these off `.Values.config.vllm` (matrix), so this MUST
+    # live under h2ogpt.config -- NOT under h2ogpt.mount. Renders as
+    # deployment + service + ephemeral volume named h2oai-h2ogpt-vllm-<name>,
+    # and is appended to H2OGPT_MODEL_LOCK automatically.
+    # Image comes from h2ogpt.deployment.vllm.podSpec below.
+    # ---------------------------------------------------------------------
+    vllm:
+      qwen2505b:
+        enabled: true
+        pdb:
+          enabled: false
+        env:
+          USER: "h2ogpt"
+          VLLM_NO_USAGE_STATS: "1"
+          DO_NOT_TRACK: "1"
+          HF_HUB_ENABLE_HF_TRANSFER: "0"
+          VLLM_LOGGING_LEVEL: "DEBUG"
+          TRITON_CACHE_DIR: "/workspace/.cache/.triton"
+        model: Qwen/Qwen2.5-0.5B-Instruct
+        resources:
+          limits:
+            cpu: 8000m
+            memory: 32Gi
+            gpu: 1
+          requests:
+            cpu: 4000m
+            memory: 32Gi
+            gpu: 1
+        storage:
+          size: 512Gi
+          useEphemeral: true
+        # NOTE: the chart template already emits --port/--host/--download-dir/--model.
+        # Only additional args belong here (they are appended as extraArgs).
+        containerArgs:
+          - "--max-num-seqs"
+          - "16"
+          - "--tensor-parallel-size"
+          - "1"
+          - "--gpu-memory-utilization"
+          - "0.95"
+          - "--max-model-len"
+          - "32768"
+          - "--dtype"
+          - "auto"
+          - "--seed"
+          - "1234"
+          - --trust-remote-code
+          - --enable-prefix-caching
+          - --enable-chunked-prefill
+
+
+
+# internal testing of old vllm declaration along with new vllm declaration
+# line 305 handles the below
+    # llm:
+    #   externalLLM:
+    #     modelLock:
+    #     # changed on 2026-06-04 by PCSS based on ticket reply to fix LiteLLM issue 
+    #     - inference_server     : vllm_chat:h2oai-h2ogpt-llama-3-3-70b:5000:/v1
+    #       base_model           : meta-llama/Llama-3.3-70B-Instruct
+    #       display_name         : meta-llama/Llama-3.3-70B-Instruct
+    #       tokenizer_base_model : tiktoken
+    #       max_seq_len          : 32768
+    #     #  max_output_seq_len   : 4096 # disable, modifiable in UI
+    #       images_num_max       : -2
+
+    #     # added on 2026-06-04 by PCSS to conduct FAT on Staging; based on umbrella-1.2.0-values_masked.yaml from Prod        
+    #     - inference_server     : vllm_chat:h2oai-h2ogpt-qwen3-coder:5000:/v1
+    #       base_model           : Qwen/Qwen3-Coder-30B-A3B-Instruct
+    #       display_name         : Qwen/Qwen3-Coder-30B-A3B-Instruct
+    #       tokenizer_base_model : tiktoken
+    #       max_seq_len          : 262144
+    #     #  max_output_seq_len   : 4096 # disable, modifiable in UI
+    #       images_num_max       : -2
+          
+  deployment:
+## This strategyType was not in staging but tested in `vllm upgrade` to apply
+    agent-shared:
+      strategyType: RollingUpdate
+    agent-isolated:
+      strategyType: RollingUpdate
+    function:
+      strategyType: RollingUpdate
+
+    # Image for ALL new-style (config.vllm matrix) pods -> vLLM 0.19.
+    # useModelHub is already set here by the umbrella chart, so overriding
+    # only the image is safe (maps merge).
+    vllm:
+      podSpec:
+        containers:
+          vllm:
+            image:
+              # repository: h2oai-h2ogpt-internalvllm
+              # tag: v0.2.1-2156
+              repository: "thirdparty-chainguard-vllmopenai"
+              tag: "v0.19-20260515"
+
+    # OLD-STYLE vLLM declaration (0.8.5 / h2oai-h2ogpt-internalvllm).
+    # Hand-rolled deployment + service + mount, one set per model.
+
+    # DISABLED: only 1 old-style model wanted for this test. Also unschedulable
+    # on this cluster -- requests 256Gi RAM (max node allocatable is 183Gi) and
+    # 2x L4 = 48GB VRAM cannot hold Llama-3.3-70B at --dtype auto (~140GB).
+    # umbrella chart 3.0.0 image has issue running llama-3-3-70b
+    # llama-3-3-70b:
+    #   replicas: 1
+    #   strategyType: RollingUpdate
+    #   podSpec:
+    #     useModelHub: 'true'
+    #     containers:
+    #       vllm:
+    #         image:
+    #           repository: "h2oai-h2ogpt-internalvllm"
+    #           tag: "v0.2.1-2156"
+    #         env:
+    #           HOME: /workspace/
+    #         gpuResourceType: "nvidia.com/gpu"
+    #         resources:
+    #           limits:
+    #             memory: 256Gi
+    #             gpu: 2
+    #             cpu: 16000m
+    #           requests:
+    #             memory: 256Gi
+    #             cpu: 16000m
+    #             gpu: 2
+    #         ports:
+    #           - name: http
+    #             containerPort: 5000
+    #             protocol: TCP
+    #         livenessProbe:
+    #           initialDelaySeconds: 300
+    #           periodSeconds: 60
+    #           type: httpGet
+    #           path: /health
+    #           port: 5000
+    #           timeoutSeconds: 60
+    #           failureThreshold: 10
+    #         readinessProbe:
+    #           type: httpGet
+    #           path: /health
+    #           port: 5000
+    #           initialDelaySeconds: 300
+    #           timeoutSeconds: 20
+    #           periodSeconds: 120
+    #           failureThreshold: 100
+    #         command: ["python3"]
+    #         args:
+    #           - "-m"
+    #           - "vllm.entrypoints.openai.api_server"
+    #           - "--port"
+    #           - "5000"
+    #           - "--host"
+    #           - "0.0.0.0"
+    #           - "--download-dir"
+    #           - "/workspace/.cache/huggingface/hub"
+    #           - "--model"
+    #           - "meta-llama/Llama-3.3-70B-Instruct"
+    #           - "--max-num-seqs"
+    #           - "16"
+    #           - "--tensor-parallel-size"
+    #           - "2"
+    #           - "--gpu-memory-utilization"
+    #           - "0.95"
+    #           - "--max-model-len"
+    #           - "32768"
+    #           - "--dtype"
+    #           - "auto"
+    #           - "--seed"
+    #           - "1234"
+    #           - "--trust-remote-code"
+
+    # added on 2026-06-04 by PCSS to conduct FAT on Staging; based on umbrella-1.2.0-values_masked.yaml from Prod
+    qwen3-coder:
+      replicas: 1
+      strategyType: RollingUpdate
+      podSpec:
+        useModelHub: 'true'
+        containers:
+          vllm:
+            image:
+              repository: "h2oai-h2ogpt-internalvllm"
+              tag: "v0.2.1-2156"
+            env:
+              HOME: /workspace/
+            gpuResourceType: "nvidia.com/gpu"
+            resources:
+              limits:
+                memory: 64Gi
+              # gpu: 2  # 30B only; no node has 2 free GPUs -> pod stayed Pending
+                gpu: 1
+                cpu: 8000m
+              requests:
+                memory: 64Gi
+                cpu: 4000m
+              # gpu: 2
+                gpu: 1
+            ports:
+              - name: http
+                containerPort: 5000
+                protocol: TCP
+            livenessProbe:
+              initialDelaySeconds: 300
+              periodSeconds: 60
+              type: httpGet
+              path: /health
+              port: 5000
+              timeoutSeconds: 60
+              failureThreshold: 10
+            readinessProbe:
+              type: httpGet
+              path: /health
+              port: 5000
+              initialDelaySeconds: 300
+              timeoutSeconds: 20
+              periodSeconds: 120
+              failureThreshold: 100
+            command: ["python3"]
+            args:
+              - "-m"
+              - "vllm.entrypoints.openai.api_server"
+              - "--port"
+              - "5000"
+              - "--host"
+              - "0.0.0.0"
+              - "--download-dir"
+              - "/workspace/.cache/huggingface/hub"
+              - "--model"
+              - "Qwen/Qwen3-0.6B"
+              - "--max-num-seqs"
+              - "128"
+              - "--tensor-parallel-size"
+            # - "2"  # must equal the GPU count above
+              - "1"
+              - "--data-parallel-size"
+              - "1"
+              - "--gpu-memory-utilization"
+              - "0.95"
+              - "--enable-auto-tool-choice"
+              - "--tool-call-parser"
+              - "hermes"
+              - "--enable-chunked-prefill"
+              - "--max-num-batched-tokens"
+              - "2048"
+              - "--dtype"
+              - "auto"
+              - "--seed"
+              - "1234"
+              - "--trust-remote-code"
+
+  service:
+    # DISABLED with the llama-3-3-70b deployment above
+    # llama-3-3-70b:
+    #   type: ClusterIP
+    #   target: llama-3-3-70b
+    #   ports:
+    #     http:
+    #       port: 5000
+    #       protocol: TCP
+    #       targetPort: 5000
+
+    # added on 2026-06-04 by PCSS to conduct FAT on Staging; based on umbrella-1.2.0-values_masked.yaml from Prod
+    qwen3-coder:
+      type: ClusterIP
+      target: qwen3-coder
+      ports:
+        http:
+          port: 5000
+          protocol: TCP
+          targetPort: 5000
+
+  mount:
+    # DISABLED with the llama-3-3-70b deployment above
+    # llama-3-3-70b:
+    #   volumeMounts:
+    #     - mountPath: /workspace/.cache
+    #   type: ephemeral
+    #   labels:
+    #     type: llama-ephemeral
+    #   accessModes: [ "ReadWriteOnce" ]
+    #   resources:
+    #     requestsStorage: 150Gi
+    #   target:
+    #     llama-3-3-70b: {}
+
+    # added on 2026-06-04 by PCSS to conduct FAT on Staging; based on umbrella-1.2.0-values_masked.yaml from Prod
+    qwen3-coder:
+      volumeMounts:
+        - mountPath: /workspace/.cache
+      type: ephemeral
+      labels:
+        type: qwen3-ephemeral
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requestsStorage: 150Gi
+      target:
+        qwen3-coder: {}
+
+
+h2ogpte:
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+    minio: false
+    redis: false
+  
+  subdomains:
+    public: h2ogpte
+  config:
+    usage:
+      maxLlmCostPerUserPer24h: 1000
+
+    #Phase 1
+    objectStorage:
+      type: minio                     # use 'minio' for direct MinIO access
+      secureConnectors:
+        enabled: false                # disable — not using securestore-managed connectors
+      secretManager:
+        enabled: false  
+
+    # config.mux
+    mux:
+      adminMode: "oidc"
+      rolesClaim: "groups"
+      adminRole: "admin"
+      # logoUrl: "https://ts-h2opure.<DOMAIN>/h2o-public/h2ogpte-favicon.svg"
+      # chatLogoUrl: "https://ts-h2opure.<DOMAIN>/h2o-public/h2ogpte.png"
+      primaryColor: "#334F4E"
+      chatName: "SuperAI"
+      titleText: "SuperAI"
+      greeting: "Hello"
+      resources:
+        limits:
+          memory: 8Gi
+        requests:
+          memory: 4Gi
+          cpu: 4000m
+      storage:
+        size: 32Gi
+        useEphemeral: true
+      evalStudio:
+        enabled: true # TODO check if need grpcAddress and uiAddress
+        # grpcAddress: ""
+        # uiAddress: ""
+
+    # config.vex
+    vex:
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: 4000m
+        requests:
+          memory: 32Gi
+          cpu: 2000m
+      storage:
+        useEphemeral: false
+
+    # config.crawl
+    crawl:
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: 4000m
+          gpu: 0
+        requests:
+          memory: 32Gi
+          cpu: 4000m
+          gpu: 0
+      storage:
+        size: 32Gi
+        useEphemeral: true
+      coreEncoderDevice: cpu
+
+    # config.core
+    core:
+      resources:
+        limits:
+          memory: 32Gi
+          cpu: 4000m
+          gpu: 0
+        requests:
+          memory: 16Gi
+          cpu: 4000m
+          gpu: 0
+      storage:
+        size: 32Gi
+        useEphemeral: true
+
+      productName: 555-internal-dev
+      companyName: company 555
+      workers: 4
+      defaultAgentTools: '["python", "shell", "ask_question_about_documents.py", "mermaid_renderer.py", "convert_document_to_text.py"]'
+
+    # config.chat
+    chat:
+      resources:
+        limits:
+          memory: 12Gi
+          cpu: 4000m
+          gpu: 0
+        requests:
+          memory: 12Gi
+          cpu: 4000m
+          gpu: 0
+      storage:
+        size: 32Gi
+        useEphemeral: true
+
+    # config.models
+    models:
+      # -- Resources requests and limits for the models container. Must have GPUs in production, otherwise extremely slow.
+      resources:
+        requests:
+          cpu: 4000m
+          memory: 32Gi
+          gpu: 1
+        limits:
+          memory: 32Gi
+          gpu: 1
+        gpuResourceName: nvidia.com/gpu
+
+
+      # models autoscaling
+      autoscaling:
+        enabled: false
+        minReplicas: 3
+        maxReplicas: 4
+        scaleUpPods: 1
+        scaleDownPods: 1
+        metricsEnabled: true
+
+    license:
+      existingSecret: h2oai-h2ogpte-license
+
+  secret:
+    oidc:
+      lookup: false
+      existingName: 'h2oai-h2ogpte-oidc'
+    db-trusted:
+      # lookup: false # TODO check if h2ogpte.secret.foo.lookup needed
+      existingName: 'h2oai-h2ogpte-trusted-database'
+      existingKeys:
+        dsn: dsn
+    db-untrusted:
+      existingName: 'h2oai-h2ogpte-untrusted-database'
+      existingKeys:
+        dsn: dsn
+    db-admin:
+      existingName: 'h2oai-h2ogpte-admin-database'
+      existingKeys:
+        dsn: dsn
+    minio:
+      lookup: false
+      existingName: 'h2oai-h2ogpte-minio-auth'
+    shared-minio:
+      lookup: false
+      existingName: 'h2oai-h2ogpte-shared-minio-auth'
+
+  deployment:
+    chat:
+      replicas: 1
+      strategyType: RollingUpdate
+      podSpec:
+        containers:
+          chat:
+            envFrom:
+            - configMapRef:
+                name: core-extra-conf
+            - configMapRef:
+                name: chat-config
+            - secretRef:
+                name: "h2ogpt-secret"
+            - secretRef:
+                enabled: "{{ and .Values.config.agentSecrets true }}"
+                name: agent-builtin-secret
+
+    core:
+      strategyType: RollingUpdate
+      replicas: 1
+      podSpec:
+        containers:
+          core:
+            envFrom:
+            - configMapRef:
+                name: core-extra-conf
+            - configMapRef:
+                name: core-config
+            - secretRef:
+                name: "h2ogpt-secret"
+            - secretRef:
+                enabled: "{{ and .Values.config.agentSecrets true }}"
+                name: agent-builtin-secret
+
+    crawl:
+      strategyType: RollingUpdate
+      replicas: 1
+    mux:
+      strategyType: RollingUpdate
+      replicas: 1
+      podSpec:
+        containers:
+          mux:
+            envFrom:
+            - configMapRef:
+                name: mux-config
+            # - configMapRef:
+            #     name: mux-extra-cm
+    models:
+      strategyType: RollingUpdate
+
+  pvc:
+    vex-pvc:
+      resources:
+        requestsStorage: 1000Gi
+        limitsStorage: 32Gi
+
+  configmap:
+    core-extra-conf:
+      data:
+        # tracker 181 cost constraints
+        h2ogpte_CORE_DEFAULT_COST_CONTROLS: '{"max_cost": 0.5, "max_cost_per_million_tokens": 75, "model": ["Qwen/Qwen2.5-0.5B-Instruct"], "willingness_to_pay": 0.6, "willingness_to_wait": 10 }'
+        # tracker xxx vision mode
+        h2ogpte_CORE_DEFAULT_VISION_MODE: 'off'
+    # mux-extra-cm:
+    #   data:
+    #     h2ogpte_MUX_TELEMETRY_ENABLED: "true"
+    #     h2ogpte_MUX_TELEMETRY_ADDRESS: "mha-internal-dev-dev-telemetry-service.telemetry.svc.cluster.local:80"
+
+evalstudio:
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+  publicSubdomain: eval-studio
+
+  # AWS Specific
+  extraEnv:
+    eks-service-auth:
+      target:
+        server: {}
+      env:
+        SERVICE_AUTH_ISSUER_URL: "https://oidc.eks.us-east-1.amazonaws.com/id/17541AA3A33D022A1EB4C6E66461F1EE"
+        SERVICE_AUTH_USE_KUBERNETES_HTTP_CLIENT: "false"
+  
+  # Disable GPU usage for single-node instance
+  oidc:
+    clientId: hac-evalstudio
+  config:
+    oidc:
+      clientId: hac-evalstudio
+    server:
+      userBootstrap:
+        enabled: "true"
+        h2ogpte:
+          address: 'https://h2ogpte.10.18.64.250.nip.io'
+        connections:
+          - id: h2ogpte-rag
+            display_name: H2O Enterprise h2ogpte (RAG)
+            description: "H2O Enterprise h2ogpte (RAG)."
+            type: MODEL_TYPE_h2ogpte_RAG
+          - id: h2ogpte-llm
+            display_name: H2O Enterprise h2ogpte (LLM)
+            description: "H2O Enterprise h2ogpte (LLM)."
+            type: MODEL_TYPE_h2ogpte_LLM
+    worker:
+      customJudgeConfig: |
+          {
+            "name": "Local h2ogpte",
+            "description": "local h2ogpte",
+            "judge_type": "h2ogpte",
+            "connection": {
+              "connection_type": "H2O_GPT_E",
+              "server_url": "https://h2ogpte.10.18.64.250.nip.io",
+              "token": "<TOKEN>",
+              "token_use_type": "API_KEY"
+            },
+            "llm_model_name": "Qwen/Qwen2.5-0.5B-Instruct"
+          }
+
+    # Disabled GPU resources first due to single-node setup
+    workflowWorker:
+      topicModeling:
+        resources:
+          requests:
+            cpu: 1
+            memory: 12Gi
+            gpu: "0"
+          limits:
+            cpu: 6
+            memory: 12Gi
+            gpu: "0"
+          gpuResourceName: nvidia.com/gpu
+      testValidation:
+        resources:
+          requests:
+            cpu: 1
+            memory: 12Gi
+            gpu: "0"
+          limits:
+            cpu: 6
+            memory: 12Gi
+            gpu: "0"
+          gpuResourceName: nvidia.com/gpu
+
+  configmap:
+    server:
+      data:
+        STORAGE_URL: "s3://h2o-eval-studio?endpoint=http://minio.minio.svc:9000&region=local&disableSSL=true&s3ForcePathStyle=true&prefix=data/"
+
+  # TODO CLEANUP - same as UH default values
+  secret:
+    server-env:
+      existingName: 'h2oai-evalstudio-minio-auth'
+    keycloak-client-secret:
+      existingName: 'h2oai-evalstudio-oidc'
+    dbconnstr:
+      existingName: 'h2oai-evalstudio-database'
+      existingKeys:
+        dsn: dsn
+
+  deployment:
+    workflow-worker-test-validation:
+      podSpec:
+        containers:
+          worker:
+            # Fix indentation bug in evalstudio chart
+            gpuResourceName:  nvidia.com/gpu
+
+modelshub:
+  dependencyCheck:
+    minio: false
+
+  # UH 3.0.0 needs v0.0.18 to functions
+  image:
+    tag: v0.0.18
+
+  minio:
+    readTimeout: 30
+    connectionTimeout: 30
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      memory: "4Gi"
+
+  configmap:
+    config:
+      data:
+        FLASK_MINIO_API_HOST: 'minio.minio.svc:9000'
+        FLASK_MINIO_BUCKET_NAME: "h2o-models-hub"
+
+  securityContext:
+    container:
+      preferGlobal: false
+      runAsNonRoot: true
+      runAsUser: "1000"
+      allowPrivilegeEscalation: false
+    #   privileged: false
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop:
+          - ALL
+
+# Phase 2
+keycloak:
+  namespaceOverride: keycloak-v2
+  dependencyCheck:
+    postgresql: false       # We use external DB, not the bundled one
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi           # Default 768Mi causes OOMKill
+  postgresql:
+    enabled: false           # Disable bundled PostgreSQL
+  externalDatabase:
+    host: postgres16.postgres-db.svc.cluster.local
+    port: 5432
+    database: keycloak_v2
+    existingSecret: h2oai-keycloak-database
+    existingSecretUserKey: username
+    existingSecretPasswordKey: password
+  
+  # config for ssl
+  trustedCertsExistingSecret: ""
+  extraStartupArgs: "--features=fips --https-key-store-type=bcfks --verbose"
+  extraEnvVars:
+    - name: ADFS_TRUSTSTORE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: spi-password
+          key: spi-truststore-password
+    - name: JDK_JAVA_OPTIONS
+      value: >-
+        -Djavax.net.ssl.trustStore=/opt/iamguarded/keycloak/adfs/truststore.bcfks
+        -Djavax.net.ssl.trustStorePassword=$(ADFS_TRUSTSTORE_PASSWORD)
+  
+  # Mount Kubernetes secret (truststore)
+  extraVolumes:
+    - name: adfs-truststore
+      secret:
+        secretName: adfs-truststore
+
+  extraVolumeMounts:
+    - name: adfs-truststore
+      mountPath: /opt/iamguarded/keycloak/adfs
+      readOnly: true
+
+
+# Phase 3 configuration
+authz:
+  namespaceOverride: authz-v2
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+  config:
+    gateway:
+      enabled: true
+      logLevel: debug
+    policyserver:
+      logLevel: debug
+    workspaceserver:
+      logLevel: debug
+    
+    userserver:
+      keycloak:
+        credentials:
+          clientID: hac-authz
+    serviceAuth:
+      issuerURL: "https://mha-internal-dev-bucket-008947002919-us-east-1-an.s3.us-east-1.amazonaws.com/eks/oidc"
+      useKubernetesHTTPClient: false
+
+  secret:
+    policyserver-database:
+      existingName: 'h2oai-authz-policyserver-database'
+      existingKeys:
+        dsn: dsn
+    workspaceserver-database:
+      existingName: 'h2oai-authz-workspaceserver-database'
+      existingKeys:
+        dsn: dsn
+    keycloak:
+      existingName: 'h2oai-authz-keycloak'
+
+telemetry:
+  namespaceOverride: telemetry-v2
+  dependencyCheck:
+    postgresql: false
+  config:
+    serviceAuth:
+      issuerURL: "https://mha-internal-dev-bucket-008947002919-us-east-1-an.s3.us-east-1.amazonaws.com/eks/oidc"
+      useKubernetesHTTPClient: false
+  secret:
+    dsn:
+      lookup: true
+      existingName: 'h2oai-telemetry-database'
+      existingKeys:
+        dsn: dsn
+
+clouddiscovery:
+  namespaceOverride: discovery-v2
+  deployment:
+    server:
+      replicas: 1
+  config:
+    registry:
+      kubernetes:
+        excludeNamespaceRegexp: "^(mlops|steam|telemetry|discovery|keycloak)$"
+  ingress:
+    service:
+      enabled: true
+      rules:
+        main-rule:
+          subdomain: appstore-v2
+          paths:
+            service-path:
+              path: "/.ai.h2o.cloud.discovery/"
+              pathType: ImplementationSpecific
+              serviceName: public
+              portNumber: 9610
+
+appstore:
+  namespaceOverride: appstore
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+    clouddiscovery: true
+  config:
+    server:
+      # added on 2026-06-04 by PCSS to conduct FAT on Staging; create alias issue
+      disableSubdomainRouting: false
+
+      clientID: hac-appstore
+      cliClientID: hac-appstore-public
+      waveClientID: hac-appstore-wave
+      platformClientID: hac-platform-public
+      storePath: 's3://appstore-bucket-v2/store?endpoint=http://minio.minio.svc:9000&region=local&use_path_style=true'
+      
+      #Launch Profles LG, HT and LLM Studio
+      launchProfiles: 
+        gpu-lg:
+          description: "GPU Label Genie"
+          memoryLimit: 16Gi
+          memoryReservation: 16Gi
+          cpuLimit: 2
+          cpuReservation: 2
+          gpuCount: 1
+        cpu-lg:
+          description: "CPU Label Genie"
+          memoryLimit: 16Gi
+          memoryReservation: 16Gi
+          cpuLimit: 4
+          cpuReservation: 2
+          #gpuResource: nvidia.com/mig-7g.80gb
+        gpu-ht:
+          description: "GPU Hydrogen Torch Profile"
+          memoryLimit: 48Gi
+          memoryReservation: 32Gi
+          cpuLimit: 2
+          cpuReservation: 2
+          gpuCount: 1
+        gpu-ls:
+          description: "GPU LLM Studio"
+          memoryLimit: 64Gi
+          memoryReservation: 32Gi
+          cpuLimit: 4
+          cpuReservation: 4
+          gpuCount: 1
+  
+  ingress:
+    ingress:
+      rules:
+        main-rule:
+          paths:
+            discovery-path:
+              enabled: false
+
+  secret:
+    secrets:
+      lookup: true
+      existingName: 'h2oai-appstore-secrets'
+    dsn:
+      lookup: true
+      existingName: 'h2oai-appstore-database'
+      existingKeys:
+        dsn: dsn
+    minio-auth:
+      lookup: true
+      existingName: 'h2oai-appstore-minio-auth'
+
+
+# Phase 4
+drive:
+  namespaceOverride: drive-v2
+  dependencyCheck:
+    postgresql: false   # using pre-TF postgresql
+    minio: false        # using external minio
+  config:
+    sts:
+      # Product limitation, need to perform impersonation for OIDC to resolve
+      serviceAuthentication:
+        kubernetesIssuerDiscovered: false
+        issuerUrl: "https://oidc.eks.us-east-1.amazonaws.com/id/17541AA3A33D022A1EB4C6E66461F1EE"
+    userdrive:
+      database:
+        dsn: dsn
+      backend:
+        type: s3
+        s3:
+          iamRoleEnabled: false
+          bucket: "h2oai-drive-v2"
+          endpoint: "http://minio.minio.svc:9000"
+    workspacedrive:
+      enabled: true
+      backend:
+        type: s3
+        s3:
+          iamRoleEnabled: false
+          bucket: "h2oai-drive-v2"
+          endpoint: "http://minio.minio.svc:9000"
+  secret:
+    workspacedrive-aws-backend:
+      existingName: 'h2oai-drive-minio-auth'
+    userdrive-aws-backend:
+      existingName: 'h2oai-drive-minio-auth'
+    drive-database:
+      existingName: 'h2oai-drive-database'
+      existingKeys:
+        dsn: dsn
+
+
+modelhub:
+  config:
+    # Product limitation, need to perform impersonation for OIDC to resolve
+    serviceAuthentication:
+      kubernetesIssuerDiscovered: false
+      issuerUrl: "https://oidc.eks.us-east-1.amazonaws.com/id/17541AA3A33D022A1EB4C6E66461F1EE"
+
+# Phase 5 AIEM
+aiem:
+  namespaceOverride: aiem-v2
+  dependencyCheck:
+    postgresql: false
+
+  ambassador:
+    serviceName: "h2oai-aiemambassador"
+
+  config:
+    manager:
+      auth:
+        oidcRoleClaim: "realm_access.roles"
+        oidcAdminRole: "admin"
+        oidcSuperAdminRole: "admin"
+    mlops:
+      tls:
+        enabled: false
+    setup:
+      enabled: true
+      overrideConfiguration: true
+
+      dai:
+        profiles:
+          default:
+            displayName: "Default"
+            configOverride:
+              h2o_drive_endpoint_url: http://h2oai-drive-userdrive.drive-v2.svc.cluster.local:7112
+              h2o_workspace_server_endpoint: h2oai-authz-workspaceserver.authz-v2.svc.cluster.local:9520
+              driverless_ai_h2o_workspace_server_endpoint: h2oai-authz-workspaceserver.authz-v2.svc.cluster.local:9520
+
+  secret:
+    dsn:
+      lookup: true
+      existingName: 'h2oai-aiem-database'
+      existingKeys:
+        dsn: dsn
+    setup-user:
+      lookup: true
+      existingName: 'h2oai-aiem-service-user'
+
+
+# Phase 6 MLops
+mlops:
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+    rabbitmq: true
+    gatewayapi: true
+    superset: false
+    securestore: false
+  ambassador:
+    namespaceScoped: false
+    rbac:
+      name: "h2oai-ambassador"
+  config:
+    models:
+      monitoringEnabled: true
+    cors:
+      allowOrigins:
+        - "https://mlops-api-v2.10.18.64.250.nip.io"
+        - "https://appstore-v2.10.18.64.250.nip.io"
+    deploymentServer:
+      auth:
+        service:
+          issuerURL: "https://mha-internal-dev-bucket-008947002919-us-east-1-an.s3.us-east-1.amazonaws.com/eks/oidc"
+          useKubernetesHTTPClient: false
+    storage:
+      cloudPersistence:
+        enabled: true
+        url: 's3://mlops-bucket-v2?endpoint=http://minio.minio.svc:9000&region=local&hostname_immutable=true'
+      auth:
+        service:
+          issuerURL: "https://mha-internal-dev-bucket-008947002919-us-east-1-an.s3.us-east-1.amazonaws.com/eks/oidc"
+          useKubernetesHTTPClient: false
+
+  # Phase 6 - Configuration for the RabbitMQ
+  rabbitmq:
+    service:
+      name: h2oai-rabbitmq-service.rabbitmq-v2.svc.cluster.local
+      port: 5672
+  ingress:
+    api-gateway:
+      enabled: true
+
+  secret:
+    oidc:
+      lookup: true
+      existingName: 'h2oai-mlops-oidc'
+    deployment-server-database:
+      lookup: true
+      existingName: 'h2oai-mlops-deployer-database'
+      existingKeys:
+        dsn: dsn
+    monitoring-app-backend-database:
+      lookup: true
+      existingName: 'h2oai-mlops-monitoring-database'
+      existingKeys:
+        dsn: dsn
+    aggregates-deployment-server-database:
+      lookup: true
+      existingName: 'h2oai-mlops-aggregates-deployment-server-database'
+      existingKeys:
+        dsn: dsn
+    aggregates-streaming-processor-database:
+      lookup: true
+      existingName: 'h2oai-mlops-aggregates-streaming-processor-database'
+      existingKeys:
+        dsn: dsn
+        username: username
+    storage-database:
+      lookup: true
+      existingName: 'h2oai-mlops-storage-database'
+      existingKeys:
+        dsn: dsn
+    storage-aws:
+      lookup: true
+      existingName: 'h2oai-mlops-storage-minio-auth'
+
+#Phase 7 - document ai
+kafka:
+  namespaceOverride: kafka-v2
+
+argoworkflows:
+  namespaceOverride: argoworkflows-v2
+  server:
+    image:
+      registry: 008947002919.dkr.ecr.us-east-1.amazonaws.com
+  controller:
+    image:
+      registry: 008947002919.dkr.ecr.us-east-1.amazonaws.com
+    workflowNamespaces:
+      - mlapi-v2
+    instanceID:
+      enabled: true
+      explicitID: mlapi-v2
+  executor:
+    image:
+      registry: 008947002919.dkr.ecr.us-east-1.amazonaws.com
+  useStaticCredentials: true
+  artifactRepository:
+    archiveLogs: true
+    s3:
+      accessKeySecret:
+        name: "h2oai-argo-minio-auth"
+        key: "awsAccessKeyID"
+      secretKeySecret:
+        name: "h2oai-argo-minio-auth"
+        key: awsSecretAccessKey
+      # insecure: false
+      # caSecret:
+      #   name: ca-root
+      #   key: cert.pem
+      bucket: h2oai-api-v2
+      endpoint: minio.minio.svc:9000
+      region: us-east-1
+      # roleARN:
+      # useSDKCreds: true
+      # encryptionOptions:
+      #   enableEncryption: true
+
+mlapi:
+  dependencyCheck:
+    postgresql: false
+    minio: false
+  config:
+    datastore: 's3://minio.minio.svc:9000/h2oai-api-v2?region=local&disableTLS=true'
+    workflowNamespaces:
+      - mlapi-v2
+    argo_instance_id: "mlapi-v2"
+
+  secret:
+    aws:
+      lookup: true
+      existingName: 'h2oai-mlapi-minio-auth'
+    database:
+      lookup: true
+      existingName: 'h2oai-mlapi-database'
+      existingKeys:
+        dsn: dsn
+
+documentai:
+  dependencyCheck:
+    keycloak: false
+    postgresql: false
+  config:
+    api:
+      extraEnv:
+        S3_ENDPOINT_URL: 'http://minio.minio.svc:9000'
+        AWS_DEFAULT_REGION: local
+      s3:
+        documents:
+          endpointUrl: 'http://minio.minio.svc:9000'
+          bucket: h2oai-api-v2
+      mlapi:
+        # explicit for mlapi-v2
+        url: http://h2oai-mlapi-http.mlapi-v2.svc.cluster.local/v1alpha
+      #   urlPublic: https://ml-api-v2.staging.ts-h2o.deltasigma.com
+      # prevent scorer pod from seeing GPU - configmap documentai-api-config
+      publish:
+        scorer:
+          environment: |
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "void"
+            - name: CUDA_VISIBLE_DEVICES
+              value: ""
+
+  secret:
+    api-database:
+      lookup: true
+      existingName: 'h2oai-documentai-database'
+      existingKeys:
+        dsn: dsn
+    api-aws:
+      lookup: true
+      existingName: 'h2oai-documentai-minio-auth'
+    api-pipeline-aws:
+      lookup: true
+      existingName: 'h2oai-documentai-minio-auth'
+
+
+appdriveui:
+  dependencyCheck:
+    appstore: true
+    drive: true
+    securestore: false
+
+
+secret:
+  # Phase 1 - use secrets that already exist in the h2ogpte namespace instead of having the chart create them
+  h2ogpte-oidc:
+    enabled: true
+    namespace: h2ogpte
+    existingName: h2oai-h2ogpte-oidc
+    lookup: true
+  h2ogpte-trusted-database:
+    enabled: true
+    namespace: "h2ogpte"
+    existingName: h2oai-h2ogpte-trusted-database
+    lookup: true
+  h2ogpte-untrusted-database:
+    enabled: true
+    namespace: "h2ogpte"
+    existingName: h2oai-h2ogpte-untrusted-database
+    lookup: true
+  h2ogpte-admin-database:
+    enabled: true
+    namespace: "h2ogpte"
+    existingName: h2oai-h2ogpte-admin-database
+    lookup: true
+  h2ogpte-minio-auth:
+    enabled: true
+    namespace: "h2ogpte"
+    existingName: h2oai-h2ogpte-minio-auth
+    lookup: true
+  h2ogpte-shared-minio-auth:
+    enabled: true
+    namespace: "h2ogpte"
+    existingName: h2oai-h2ogpte-shared-minio-auth
+    lookup: true
+
+  evalstudio-minio-auth:
+    enabled: true
+    namespace: "evalstudio"
+    existingName: h2oai-evalstudio-minio-auth
+    lookup: true
+  evalstudio-database:
+    enabled: true
+    namespace: "evalstudio"
+    existingName: h2oai-evalstudio-database
+    lookup: true
+  evalstudio-oidc:
+    enabled: true
+    namespace: "evalstudio"
+    existingName: h2oai-evalstudio-oidc
+    lookup: true
+
+  # Phase 2
+  keycloak-database:
+    enabled: true
+    namespace: "keycloak-v2"
+    existingName: h2oai-keycloak-database
+    lookup: true
+
+  # Phase 3
+  # --- AuthZ Secrets ---
+  authz-workspaceserver-database:
+    enabled: true
+    namespace: "authz-v2"
+    existingName: h2oai-authz-workspaceserver-database
+    lookup: true
+  authz-policyserver-database:
+    enabled: true
+    namespace: "authz-v2"
+    existingName: h2oai-authz-policyserver-database
+    lookup: true
+  authz-keycloak:
+    enabled: true
+    namespace: "authz-v2"
+    existingName: h2oai-authz-keycloak
+    lookup: true
+
+  # --- Telemetry Secrets ---
+  telemetry-database:
+    enabled: "true"
+    namespace: "telemetry-v2"
+    existingName: h2oai-telemetry-database
+    lookup: true
+
+  # --- Appstore Secrets ---
+  appstore-secrets:
+    enabled: true
+    namespace: "appstore"
+    existingName: h2oai-appstore-secrets
+    lookup: true
+  appstore-database:
+    enabled: true
+    namespace: "appstore"
+    existingName: h2oai-appstore-database
+    lookup: true
+  appstore-minio-auth:
+    enabled: true
+    namespace: "appstore"
+    existingName: h2oai-appstore-minio-auth
+    lookup: true
+  
+  # Phase 4: Migration to ModelHub
+  # --- Drive Secrets ---
+  drive-minio-auth:
+    enabled: true
+    namespace: "drive-v2"
+    existingName: h2oai-drive-minio-auth
+    lookup: true
+  drive-database:
+    enabled: true
+    namespace: "drive-v2"
+    existingName: h2oai-drive-database
+    lookup: true
+
+  # Phase 5: AIEM
+  # --- AIEM Secrets ---
+  aiem-database:
+    enabled: true
+    namespace: "aiem-v2"
+    existingName: h2oai-aiem-database
+    lookup: true
+  aiem-service-user:
+    enabled: true
+    namespace: "aiem-v2"
+    existingName: h2oai-aiem-service-user
+    lookup: true
+  aiem-dai-license:
+    enabled: true
+    existingName: h2oai-aiem-dai-license
+    existingKeys:
+      license.sig: license.sig
+    lookup: true
+
+  # Phase 6: MLOps
+  # --- MLOps Secrets ---
+  mlops-storage-database:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-storage-database
+    lookup: true
+  mlops-deployer-database:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-deployer-database
+    lookup: true
+  mlops-monitoring-database:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-monitoring-database
+    lookup: true
+  mlops-oidc:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-oidc
+    lookup: true
+  mlops-storage-minio-auth:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-storage-minio-auth
+    lookup: true
+  mlops-aggregates-deployment-server-database:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-aggregates-deployment-server-database
+    lookup: true
+  mlops-aggregates-streaming-processor-database:
+    enabled: true
+    namespace: "mlops-v2"
+    existingName: h2oai-mlops-aggregates-streaming-processor-database
+    lookup: true
+  mlops-deployment-dai-license:
+    enabled: true
+    existingName: h2oai-mlops-deployment-dai-license
+    existingKeys:
+      license.sig: license.sig
+    lookup: true
+
+
+
+  # Phase 7
+  # --- Argo workflow Secrets ---
+  argo-minio-auth:
+    enabled: true
+    namespace: "mlapi-v2"
+    existingName: h2oai-argo-minio-auth
+    lookup: true
+
+  # --- MLApi Secrets ---
+  mlapi-database:
+    enabled: true
+    namespace: "mlapi-v2"
+    existingName: h2oai-mlapi-database
+    lookup: true
+  mlapi-minio-auth:
+    enabled: true
+    namespace: "mlapi-v2"
+    existingName: h2oai-mlapi-minio-auth
+    lookup: true
+
+  # --- DocumentAI Secrets ---
+  documentai-database:
+    enabled: true
+    namespace: "document-ai-v2"
+    existingName: h2oai-documentai-database
+    lookup: true
+  documentai-minio-auth:
+    enabled: true
+    namespace: "document-ai-v2"
+    existingName: h2oai-documentai-minio-auth
+    lookup: true
