@@ -252,10 +252,23 @@ h2ogpt:
           enabled: false
 ```
 
-![](qwen2.5.png)
-
 ### upgrade prep
+Prod values todo
+- remove global.oidc.keycloakRealm -> defaults to hac. explanation:
 ```
-$ md5 Downloads/haic-installer-bundle-24.07.0.zip
-MD5 (Downloads/haic-installer-bundle-24.07.0.zip) = 80892c642e05e673bd0fb1d434b98a96
+Default: Not set directly under global.oidc in the top-level values.yaml — there's no global.oidc.keycloakRealm key there. It falls back to libDefaults.oidcKeycloakRealm: hac, defined identically in every component's bundled common chart, e.g. charts/common/values.yaml:159 (same value repeated in 27 subcharts like h2oai-mlops, h2oai-h2ogpte, h2oai-appstore, etc.).
+
+Where used: Shared helper template h2o.common.helpers.oidc.data, defined per-component at charts/<component>/charts/common/templates/helpers/oidc/_data.tpl, e.g. charts/h2oai-mlops/charts/common/templates/helpers/oidc/_data.tpl.
+
+How it's used (_data.tpl:6-31):
+
+Merges .Values.global.oidc, then overwrites with per-component .Values.oidc (component-level wins).
+If keycloakRealm still unset after merge → falls back to libDefaults.oidcKeycloakRealm ("hac").
+Combined with keycloakAddress to build:
+providerUrl: <keycloakAddress>/auth/realms/<keycloakRealm>
+logoutUrl: .../protocol/openid-connect/logout
+tokenIntrospectionUrl: .../protocol/openid-connect/token/introspect
+This helper is called in ~59 places chart-wide. Example: charts/h2oai-mlops/templates/api-gateway/_configmap.tpl:5-6 injects providerUrl as USER_AUTH_ISSUER_URL env var. Similar pattern in storage/_configmap.tpl, deployer/_configmap.tpl, deployer/_deployer_config.tpl.
+
+So to override, set global.oidc.keycloakRealm: <realm> once at umbrella level and it cascades to every component's OIDC URLs.
 ```
