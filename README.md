@@ -252,23 +252,25 @@ h2ogpt:
           enabled: false
 ```
 
-### upgrade prep
-Prod values todo
-- remove global.oidc.keycloakRealm -> defaults to hac. explanation:
-```
-Default: Not set directly under global.oidc in the top-level values.yaml — there's no global.oidc.keycloakRealm key there. It falls back to libDefaults.oidcKeycloakRealm: hac, defined identically in every component's bundled common chart, e.g. charts/common/values.yaml:159 (same value repeated in 27 subcharts like h2oai-mlops, h2oai-h2ogpte, h2oai-appstore, etc.).
+### prod upgrade
 
-Where used: Shared helper template h2o.common.helpers.oidc.data, defined per-component at charts/<component>/charts/common/templates/helpers/oidc/_data.tpl, e.g. charts/h2oai-mlops/charts/common/templates/helpers/oidc/_data.tpl.
+Q: need to fill up appstore.config.server.clientSecret and waveClientSecret?
 
-How it's used (_data.tpl:6-31):
+    Short answer: no need to fill manually, chart handles it end-to-end.
 
-Merges .Values.global.oidc, then overwrites with per-component .Values.oidc (component-level wins).
-If keycloakRealm still unset after merge → falls back to libDefaults.oidcKeycloakRealm ("hac").
-Combined with keycloakAddress to build:
-providerUrl: <keycloakAddress>/auth/realms/<keycloakRealm>
-logoutUrl: .../protocol/openid-connect/logout
-tokenIntrospectionUrl: .../protocol/openid-connect/token/introspect
-This helper is called in ~59 places chart-wide. Example: charts/h2oai-mlops/templates/api-gateway/_configmap.tpl:5-6 injects providerUrl as USER_AUTH_ISSUER_URL env var. Similar pattern in storage/_configmap.tpl, deployer/_configmap.tpl, deployer/_deployer_config.tpl.
+    What they are:
+    - clientSecret — secret for Keycloak confidential client hac-appstore (browser session OIDC auth to appstore backend)
+    - waveClientSecret — secret for Keycloak confidential client hac-appstore-wave (Wave app/instance OIDC auth)
 
-So to override, set global.oidc.keycloakRealm: <realm> once at umbrella level and it cascades to every component's OIDC URLs.
-```
+    Flow for a new install (leave both blank):
+    1. values.yaml:1064-1070 — the appstore-secrets K8s Secret template auto-generates a 32-char random string for each if you don't set them, and stores it in Secret <release>-appstore-secrets in the appstore namespace.
+    2. templates/keycloak/_secret.tpl:282-308 — the realm import JSON (000-realm.json, consumed by the keycloak-config-cli job) reads that same generated secret via h2o.common.helpers.secret.get and uses it as the secret field when creating the hac-appstore / hac-appstore-wave clients in Keycloak.
+
+    So appstore's own config and the Keycloak client end up with matching secrets automatically — keycloak-config-cli does the work for you.
+
+    Bonus: the random-string helper (h2o.common.helpers.secret.value → h2o.common.libs.randomString) does a lookup on the existing Secret first, so on helm upgrade it won't rotate the value and break existing OIDC sessions — it's stable, not just install-time.
+
+    Only fill these in manually if you want a fixed/known secret (e.g. for GitOps reproducibility or rotating a compromised secret).
+
+
+
