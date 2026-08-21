@@ -272,5 +272,16 @@ Q: need to fill up appstore.config.server.clientSecret and waveClientSecret?
 
     Only fill these in manually if you want a fixed/known secret (e.g. for GitOps reproducibility or rotating a compromised secret).
 
+Sharepoint bug
 
+- ok, thanks for confirming, this is a known UI bug in 1.6.54, not a SharePoint problem. It fires as soon as the connector is selected, before anything talks to their server, and leaves the credential form empty so nothing after it works. Fixed in 1.7.3.
+- `h2ogpte.config.objectStorage.secureConnectors.enabled: false`. (step 3c turns off secureConnectors and secretManager to avoid the Securestore dependency)
+- Check the rendered value, not the values file. The chart combines `secureConnectors.enabled` with `global.components.securestore.enabled`, so read what actually came out: `kubectl -n <ns> get cm mux-config -o yaml | grep SECURE_CONNECTORS_ENABLED` then based on result: false is what we want. true means they're hitting the bug.
+- Check the running mux pod too, since env is injected at pod start: `kubectl -n <ns> exec deploy/mux -- env | grep SECURE_CONNECTORS_ENABLED` If the configmap says false but the pod says true, it just needs a mux restart. Same applies after any change you make, it won't take effect until mux restarts.
+- Important, don't set `secretManager.enabled: false` while `secureConnectors.enabled` is still true. Mux panics on startup with "Secure connectors are enabled but secret manager is not". Either both off or both on.
 
+Unable to find LLM that satisfy cost constraints. Try to increase max cost per doc ..
+
+- Hi, a mitigation to the above by raising the limits for our crawl service, can be done with this config: `H2OGPTE_CORE_DEFAULT_COST_CONTROLS={"max_cost": 0.5, "max_cost_per_million_tokens": 75, "model": null, "willingness_to_pay": 1, "willingness_to_wait": 60}`
+- ingestion uses the global default for max_cost above, note that changing above needs a crawl service restart.
+- This isn't a bug, it's a behavior change. In 1.6.33 we only transcribed the audio out of an mp4. From 1.6.50 on we also describe the video scenes, and that needs a vision model. Picking one is subject to a cost limit, and if their vision models are pricey, nothing qualifies and the upload fails.
